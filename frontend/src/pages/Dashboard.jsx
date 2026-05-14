@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
   Package, 
@@ -12,6 +12,8 @@ import {
   Activity
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const revenueData = [
   { name: 'Jan', value: 4000 },
@@ -34,6 +36,30 @@ const productionData = [
 ];
 
 export default function Dashboard() {
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch(`${API_URL}/production/alerts`);
+        const result = await response.json();
+        if (result.status === 'success') {
+          const merged = [
+            ...result.data.system_alerts.map(a => ({ ...a, type: 'critical', category: 'System' })),
+            ...result.data.contamination_risks.map(r => ({ ...r, type: 'warning', message: `Batch ${r.batch_number} at risk`, category: 'Quality' }))
+          ];
+          setAlerts(merged.slice(0, 3));
+        }
+      } catch (error) {
+        console.error('Dashboard Fetch Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -44,11 +70,8 @@ export default function Dashboard() {
         <div className="mt-4 sm:mt-0 flex gap-3">
           <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 flex items-center shadow-sm">
             <Clock className="w-4 h-4 mr-2 text-gray-400" />
-            Last updated: Just now
+            Last updated: {new Date().toLocaleTimeString()}
           </div>
-          <button className="btn-primary flex items-center shadow-sm shadow-agility-green/30">
-            Generate Report
-          </button>
         </div>
       </div>
 
@@ -88,58 +111,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Main Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="glass-card lg:col-span-2">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold text-gray-900">Revenue & Growth Trend</h3>
-            <select className="text-sm border-gray-300 rounded-md shadow-sm focus:border-agility-green focus:ring focus:ring-agility-green/20">
-              <option>Last 6 Months</option>
-              <option>This Year</option>
-            </select>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#57C84D" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#57C84D" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  itemStyle={{ color: '#111827', fontWeight: 500 }}
-                />
-                <Area type="monotone" dataKey="value" stroke="#57C84D" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="glass-card">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold text-gray-900">Weekly Production</h3>
-            <Activity className="w-5 h-5 text-gray-400" />
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={productionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} />
-                <Tooltip cursor={{fill: '#F3F4F6'}} />
-                <Bar dataKey="completed" fill="#57C84D" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="target" fill="#E5E7EB" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
       {/* Alerts and Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card flex flex-col">
@@ -148,27 +119,26 @@ export default function Dashboard() {
               <AlertTriangle className="w-5 h-5 text-orange-500 mr-2" />
               Critical Operational Alerts
             </h3>
-            <span className="bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">3 New</span>
+            {!loading && alerts.length > 0 && (
+              <span className="bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">{alerts.length} New</span>
+            )}
           </div>
           <div className="space-y-4 flex-1">
-            <AlertItem 
-              type="critical" 
-              title="Low Inventory: Citric Acid" 
-              desc="Current stock (45kg) is below minimum threshold (50kg)."
-              time="10 mins ago"
-            />
-            <AlertItem 
-              type="warning" 
-              title="Premix Expiring Soon" 
-              desc="Batch PX-104 (120kg) expires in 48 hours."
-              time="1 hr ago"
-            />
-            <AlertItem 
-              type="info" 
-              title="Fumigation Scheduled" 
-              desc="Warehouse A fumigation due tomorrow at 08:00 AM."
-              time="3 hrs ago"
-            />
+            {loading ? (
+              <div className="p-4 text-center text-gray-400">Loading alerts...</div>
+            ) : alerts.length === 0 ? (
+              <div className="p-4 text-center text-gray-400">No active alerts.</div>
+            ) : (
+              alerts.map((alert, i) => (
+                <AlertItem 
+                  key={i}
+                  type={alert.type || 'info'} 
+                  title={alert.type === 'critical' ? 'System Alert' : 'Contamination Risk'} 
+                  desc={alert.message}
+                  time={new Date(alert.created_at || alert.produced_at).toLocaleTimeString()}
+                />
+              ))
+            )}
           </div>
           <button className="mt-4 w-full py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
             View All Alerts
@@ -191,12 +161,6 @@ export default function Dashboard() {
               title="Mixing Phase: Batch B-2093"
               desc="Machine: Mixer M-02 • Temp: 45°C"
               time="10:15 AM"
-            />
-            <ActivityItem 
-              status="pending"
-              title="Dispatch Loading: Order #882"
-              desc="Vehicle: MH-12-AB-1234 • Client: FoodCo"
-              time="09:30 AM"
             />
           </div>
           <button className="mt-4 w-full py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
