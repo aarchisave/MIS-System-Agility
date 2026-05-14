@@ -61,7 +61,7 @@ export default function Finance() {
             <h3 className="font-semibold text-gray-700">Gross Revenue (MTD)</h3>
             <div className="p-2 bg-agility-green/10 text-agility-green rounded-lg"><DollarSign className="w-5 h-5" /></div>
           </div>
-          <div className="text-3xl font-bold text-gray-900">$165,000</div>
+          <div className="text-3xl font-bold text-gray-900">₹1,65,000</div>
           <p className="text-sm text-agility-green mt-1 flex items-center"><ArrowUpRight className="w-4 h-4 mr-1"/> +17.8% vs last month</p>
         </div>
         <div className="glass-card">
@@ -69,7 +69,7 @@ export default function Finance() {
             <h3 className="font-semibold text-gray-700">Total Expenses (MTD)</h3>
             <div className="p-2 bg-red-50 text-red-600 rounded-lg"><TrendingDown className="w-5 h-5" /></div>
           </div>
-          <div className="text-3xl font-bold text-gray-900">$105,000</div>
+          <div className="text-3xl font-bold text-gray-900">₹1,05,000</div>
           <p className="text-sm text-red-500 mt-1 flex items-center"><ArrowUpRight className="w-4 h-4 mr-1"/> +19.3% vs last month</p>
         </div>
         <div className="glass-card">
@@ -85,7 +85,7 @@ export default function Finance() {
             <h3 className="font-semibold text-gray-700">Wastage Cost Impact</h3>
             <div className="p-2 bg-orange-50 text-orange-600 rounded-lg"><AlertTriangle className="w-5 h-5" /></div>
           </div>
-          <div className="text-3xl font-bold text-orange-600">$4,250</div>
+          <div className="text-3xl font-bold text-orange-600">₹4,250</div>
           <p className="text-sm text-gray-500 mt-1">2.5% of total expenses</p>
         </div>
       </div>
@@ -103,8 +103,8 @@ export default function Finance() {
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} />
                 <Tooltip cursor={{fill: '#F3F4F6'}} />
                 <Legend />
-                <Bar dataKey="revenue" fill="#57C84D" radius={[4, 4, 0, 0]} name="Revenue ($)" />
-                <Bar dataKey="expenses" fill="#EF4444" radius={[4, 4, 0, 0]} name="Expenses ($)" />
+                <Bar dataKey="revenue" fill="#57C84D" radius={[4, 4, 0, 0]} name="Revenue (₹)" />
+                <Bar dataKey="expenses" fill="#EF4444" radius={[4, 4, 0, 0]} name="Expenses (₹)" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -121,7 +121,7 @@ export default function Finance() {
                 <XAxis dataKey="category" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} />
                 <Tooltip />
-                <Line type="monotone" dataKey="cost" stroke="#3B82F6" strokeWidth={3} dot={{r: 4}} name="Cost ($)" />
+                <Line type="monotone" dataKey="cost" stroke="#3B82F6" strokeWidth={3} dot={{r: 4}} name="Cost (₹)" />
               </LineChart>
             </ResponsiveContainer>
           </div>

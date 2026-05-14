@@ -79,7 +79,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <KPICard 
           title="Total Revenue" 
-          value="$1.2M" 
+          value="₹12.5L" 
           trend="+12.5%" 
           isPositive={true}
           icon={TrendingUp}
