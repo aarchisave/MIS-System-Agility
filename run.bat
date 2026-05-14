@@ -2,12 +2,10 @@
 echo Starting Agility Food Products MIS Dashboard...
 
 echo Starting Backend Server...
-cd server
-start cmd /k "npm run dev"
+start cmd /k "cd backend && npm run dev"
 
 echo Starting Frontend Server...
-cd ..
-start cmd /k "npm run dev"
+start cmd /k "cd frontend && npm run dev"
 
 echo Application launched!
 echo Frontend: http://localhost:5173
