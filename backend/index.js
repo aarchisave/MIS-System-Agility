@@ -1,7 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mysql from 'mysql2/promise';
+import pkg from 'pg';
+const { Pool } = pkg;
 
 dotenv.config();
 
@@ -11,53 +12,97 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Database Connection Pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'agility_mis',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+// PostgreSQL Connection Pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false // Required for Supabase in many environments
+  }
 });
 
-// Basic route
+// Basic health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'success', message: 'Agility MIS API is running' });
+  res.json({ status: 'success', message: 'Agility MIS API (PostgreSQL) is running' });
 });
 
-// Mock endpoint for dashboard stats
-app.get('/api/dashboard/stats', async (req, res) => {
+/**
+ * GET /api/production/analytics
+ * Aggregates yield stats and overfilled packages
+ */
+app.get('/api/production/analytics', async (req, res) => {
   try {
-    // In a real app, this would query the DB. We're mocking it for now.
-    const stats = {
-      revenue: '$1.2M',
-      production: '45,200 kg',
-      orders: 124,
-      dispatchPending: 18
-    };
-    res.json({ status: 'success', data: stats });
+    const statsQuery = `
+      SELECT 
+        COUNT(DISTINCT pb.id) as total_batches,
+        AVG(pl.weight_g) as avg_package_weight,
+        COUNT(pl.id) FILTER (WHERE pl.weight_g > 100.8) as overfilled_count,
+        pb.fryer_type,
+        AVG(pb.temperature_c) as avg_temp
+      FROM production_batches pb
+      LEFT JOIN packaging_logs pl ON pb.id = pl.production_batch_id
+      GROUP BY pb.fryer_type
+    `;
+    
+    const { rows } = await pool.query(statsQuery);
+    res.json({ status: 'success', data: rows });
   } catch (error) {
+    console.error('Analytics Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 });
 
-// Mock endpoint for inventory
-app.get('/api/inventory', async (req, res) => {
+/**
+ * GET /api/production/alerts
+ * Returns active system alerts and contamination risks
+ */
+app.get('/api/production/alerts', async (req, res) => {
   try {
-    // In a real app, this would be: const [rows] = await pool.query('SELECT * FROM inventory');
-    const inventory = [
-      { id: 'RM-001', name: 'Premium Wheat Flour', stock: '2,500 kg', min: '1,000 kg', supplier: 'AgriCorp Inc', expiry: '2026-12-01', status: 'Healthy', location: 'Warehouse A' },
-      { id: 'RM-002', name: 'Citric Acid', stock: '45 kg', min: '50 kg', supplier: 'ChemSupply', expiry: '2027-05-15', status: 'Low Stock', location: 'Warehouse B' }
-    ];
-    res.json({ status: 'success', data: inventory });
+    const alertsPromise = pool.query('SELECT * FROM system_alerts WHERE is_resolved = FALSE ORDER BY created_at DESC');
+    const risksPromise = pool.query('SELECT * FROM contamination_risks');
+    
+    const [alertsRes, risksRes] = await Promise.all([alertsPromise, risksPromise]);
+    
+    res.json({ 
+      status: 'success', 
+      data: {
+        system_alerts: alertsRes.rows,
+        contamination_risks: risksRes.rows
+      }
+    });
   } catch (error) {
+    console.error('Alerts Error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+/**
+ * POST /api/batches/new
+ * Creates a new production batch record
+ */
+app.post('/api/batches/new', async (req, res) => {
+  const { batch_number, premix_batch_id, fryer_type, temperature_c, oil_ppm } = req.body;
+  
+  if (!batch_number || !fryer_type) {
+    return res.status(400).json({ status: 'error', message: 'Missing required fields' });
+  }
+
+  try {
+    const query = `
+      INSERT INTO production_batches (batch_number, premix_batch_id, fryer_type, temperature_c, oil_ppm)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `;
+    const values = [batch_number, premix_batch_id, fryer_type, temperature_c, oil_ppm];
+    
+    const { rows } = await pool.query(query, values);
+    res.status(201).json({ status: 'success', data: rows[0] });
+  } catch (error) {
+    console.error('Batch Creation Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 });
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Database connected to ${process.env.DB_HOST || 'localhost'}`);
+  console.log('Connected to Supabase PostgreSQL Pool');
 });
