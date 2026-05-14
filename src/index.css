@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white border border-gray-100 rounded-xl shadow-sm p-6;
+  }
+  .btn-primary {
+    @apply bg-agility-green text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300;
+  }
+  .table-header {
+    @apply bg-gray-50 text-gray-500 text-xs font-medium uppercase tracking-wider text-left py-3 px-4;
+  }
+  .table-cell {
+    @apply py-3 px-4 text-sm text-gray-700 border-b border-gray-100;
+  }
+  .status-badge {
+    @apply px-2 py-1 text-xs font-semibold rounded-full;
+  }
+}
