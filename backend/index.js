@@ -39,6 +39,19 @@ app.get('/api/clients', async (req, res) => {
 });
 
 /**
+ * GET /api/inventory
+ * Returns all raw materials and stock levels
+ */
+app.get('/api/inventory', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM raw_materials ORDER BY name ASC');
+    res.json({ status: 'success', data: rows });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+/**
  * GET /api/production/analytics
  * Aggregates yield stats and overfilled packages (Supports ?client=...)
  */
