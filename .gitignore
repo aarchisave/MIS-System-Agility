@@ -12,6 +12,13 @@ node_modules/
 frontend/node_modules/
 backend/node_modules/
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+frontend/.env
+backend/.env
+
 # Build directories
 dist/
 dist-ssr/
