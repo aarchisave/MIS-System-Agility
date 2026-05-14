@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Truck, MapPin, CheckCircle, Clock, Navigation } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const dispatchHistory = [
-  { id: 'DSP-8821', client: 'Reliance Fresh', product: 'Mixed Namkeen (1000 cartons)', vehicle: 'MH-12-AB-1234', date: '2026-05-12', dStatus: 'Dispatched', delStatus: 'In Transit' },
-  { id: 'DSP-8822', client: 'D-Mart HQ', product: 'Potato Wafers (500 cartons)', vehicle: 'MH-14-XY-9087', date: '2026-05-12', dStatus: 'Loading', delStatus: 'Pending' },
-  { id: 'DSP-8820', client: 'BigBasket', product: 'Cheese Balls (250 cartons)', vehicle: 'GJ-01-LM-4455', date: '2026-05-11', dStatus: 'Dispatched', delStatus: 'Delivered' },
-  { id: 'DSP-8819', client: 'Star Bazaar', product: 'Salted Peanuts (300 cartons)', vehicle: 'MH-02-PQ-1122', date: '2026-05-11', dStatus: 'Dispatched', delStatus: 'Delivered' },
-  { id: 'DSP-8823', client: 'Local Distributors', product: 'Assorted (150 cartons)', vehicle: 'Pending Allocation', date: '2026-05-13', dStatus: 'Scheduled', delStatus: 'Pending' },
+  { id: 'DSP-8821', client: 'Haldiram', product: 'Onion Kodubale (1000 cartons)', vehicle: 'MH-12-AB-1234', date: '2026-05-12', dStatus: 'Dispatched', delStatus: 'In Transit' },
+  { id: 'DSP-8822', client: 'Swiggy', product: 'Butter Murukku (500 cartons)', vehicle: 'MH-14-XY-9087', date: '2026-05-12', dStatus: 'Loading', delStatus: 'Pending' },
+  { id: 'DSP-8820', client: 'Haldiram', product: 'Khara Boondi (250 cartons)', vehicle: 'GJ-01-LM-4455', date: '2026-05-11', dStatus: 'Dispatched', delStatus: 'Delivered' },
 ];
 
 const dispatchTrends = [
@@ -21,6 +21,25 @@ const dispatchTrends = [
 ];
 
 export default function Dispatch() {
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState('');
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const response = await fetch(`${API_URL}/clients`);
+      const result = await response.json();
+      if (result.status === 'success') setClients(result.data);
+    } catch (e) { console.error(e); }
+  };
+
+  const filteredHistory = selectedClient 
+    ? dispatchHistory.filter(h => h.client === selectedClient)
+    : dispatchHistory;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -29,6 +48,14 @@ export default function Dispatch() {
           <p className="text-sm text-gray-500 mt-1">Manage shipments, track delivery vehicles, and logistics history.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex gap-3">
+          <select 
+            value={selectedClient} 
+            onChange={(e) => setSelectedClient(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:ring-agility-green focus:border-agility-green shadow-sm"
+          >
+            <option value="">All Clients</option>
+            {clients.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
           <button className="btn-primary shadow-sm shadow-agility-green/30">
             Schedule Dispatch
           </button>
@@ -135,7 +162,7 @@ export default function Dispatch() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {dispatchHistory.map((item, index) => (
+              {filteredHistory.map((item, index) => (
                 <tr key={index} className="hover:bg-gray-50 transition-colors">
                   <td className="table-cell font-medium text-gray-900">{item.id}</td>
                   <td className="table-cell font-semibold text-gray-700">{item.client}</td>

@@ -16,23 +16,30 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Production() {
   const [analytics, setAnalytics] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState('');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    batch_number: '',
-    premix_batch_id: '',
-    fryer_type: 'CONTINUOUS_FRYER',
-    temperature_c: '',
-    oil_ppm: ''
-  });
 
   useEffect(() => {
+    fetchClients();
     fetchAnalytics();
-  }, []);
+  }, [selectedClient]);
+
+  const fetchClients = async () => {
+    try {
+      const response = await fetch(`${API_URL}/clients`);
+      const result = await response.json();
+      if (result.status === 'success') setClients(result.data);
+    } catch (e) { console.error(e); }
+  };
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch(`${API_URL}/production/analytics`);
+      const url = selectedClient 
+        ? `${API_URL}/production/analytics?client=${selectedClient}`
+        : `${API_URL}/production/analytics`;
+      const response = await fetch(url);
       const result = await response.json();
       if (result.status === 'success') {
         setAnalytics(result.data);
@@ -43,6 +50,15 @@ export default function Production() {
       setLoading(false);
     }
   };
+
+  const [formData, setFormData] = useState({
+    batch_number: '',
+    premix_batch_id: '',
+    fryer_type: 'CONTINUOUS_FRYER',
+    temperature_c: '',
+    oil_ppm: '',
+    client_name: 'Haldiram'
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -61,13 +77,14 @@ export default function Production() {
       if (result.status === 'success') {
         alert('Batch started successfully!');
         setShowForm(false);
-        fetchAnalytics(); // Refresh data
+        fetchAnalytics(); 
         setFormData({
           batch_number: '',
           premix_batch_id: '',
           fryer_type: 'CONTINUOUS_FRYER',
           temperature_c: '',
-          oil_ppm: ''
+          oil_ppm: '',
+          client_name: 'Haldiram'
         });
       }
     } catch (error) {
@@ -76,7 +93,6 @@ export default function Production() {
     }
   };
 
-  // Aggregate stats for KPI cards
   const totalBatches = analytics.reduce((acc, curr) => acc + parseInt(curr.total_batches), 0);
   const avgYield = (analytics.reduce((acc, curr) => acc + parseFloat(curr.avg_package_weight || 0), 0) / (analytics.length || 1)).toFixed(2);
   const totalOverfilled = analytics.reduce((acc, curr) => acc + parseInt(curr.overfilled_count || 0), 0);
@@ -89,6 +105,14 @@ export default function Production() {
           <p className="text-sm text-gray-500 mt-1">Monitor real-time manufacturing, batches, and efficiency.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex gap-3">
+          <select 
+            value={selectedClient} 
+            onChange={(e) => setSelectedClient(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:ring-agility-green focus:border-agility-green shadow-sm"
+          >
+            <option value="">All Clients</option>
+            {clients.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
           <button 
             onClick={() => setShowForm(true)}
             className="btn-primary shadow-sm shadow-agility-green/30 flex items-center gap-2"
@@ -120,6 +144,15 @@ export default function Production() {
                 >
                   <option value="CONTINUOUS_FRYER">Continuous Fryer</option>
                   <option value="BATCH_FRYER">Batch Fryer</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Client</label>
+                <select 
+                  name="client_name" value={formData.client_name} onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-agility-green focus:ring-agility-green text-sm"
+                >
+                  {clients.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">

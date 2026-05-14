@@ -27,8 +27,7 @@ async function runMigrations() {
     console.log('Connected to Supabase PostgreSQL');
 
     const migrationFiles = [
-      '../migrations/01_init_production_schema.sql',
-      '../migrations/02_seed_data.sql'
+      '../migrations/03_import_excel_data.sql'
     ];
 
     for (const file of migrationFiles) {

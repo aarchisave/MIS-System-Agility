@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingDown, PieChart as PieChartIcon, ArrowUpRight, ArrowDownRight, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const expenseData = [
   { month: 'Jan', revenue: 120000, expenses: 85000 },
@@ -19,12 +21,37 @@ const costBreakdownData = [
 ];
 
 export default function Finance() {
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState('');
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const response = await fetch(`${API_URL}/clients`);
+      const result = await response.json();
+      if (result.status === 'success') setClients(result.data);
+    } catch (e) { console.error(e); }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Finance & Expense Analytics</h1>
           <p className="text-sm text-gray-500 mt-1">Monitor revenue, analyze costs, and track profit margins.</p>
+        </div>
+        <div className="mt-4 sm:mt-0">
+          <select 
+            value={selectedClient} 
+            onChange={(e) => setSelectedClient(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:ring-agility-green focus:border-agility-green shadow-sm"
+          >
+            <option value="">All Clients</option>
+            {clients.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
       </div>
 

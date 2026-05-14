@@ -26,24 +26,46 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
+ * GET /api/clients
+ * Returns a list of unique clients
+ */
+app.get('/api/clients', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT DISTINCT client_name FROM production_batches WHERE client_name IS NOT NULL');
+    res.json({ status: 'success', data: rows.map(r => r.client_name) });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+/**
  * GET /api/production/analytics
- * Aggregates yield stats and overfilled packages
+ * Aggregates yield stats and overfilled packages (Supports ?client=...)
  */
 app.get('/api/production/analytics', async (req, res) => {
+  const { client } = req.query;
   try {
-    const statsQuery = `
+    let query = `
       SELECT 
         COUNT(DISTINCT pb.id) as total_batches,
         AVG(pl.weight_g) as avg_package_weight,
         COUNT(pl.id) FILTER (WHERE pl.weight_g > 100.8) as overfilled_count,
         pb.fryer_type,
+        pb.client_name,
         AVG(pb.temperature_c) as avg_temp
       FROM production_batches pb
       LEFT JOIN packaging_logs pl ON pb.id = pl.production_batch_id
-      GROUP BY pb.fryer_type
     `;
     
-    const { rows } = await pool.query(statsQuery);
+    const values = [];
+    if (client) {
+      query += ` WHERE pb.client_name = $1 `;
+      values.push(client);
+    }
+    
+    query += ` GROUP BY pb.fryer_type, pb.client_name `;
+    
+    const { rows } = await pool.query(query, values);
     res.json({ status: 'success', data: rows });
   } catch (error) {
     console.error('Analytics Error:', error);
