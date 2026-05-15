@@ -45,6 +45,10 @@ const CAPACITIES = {
 router.post('/upload-ocr', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
+  if (!process.env.GOOGLE_API_KEY || process.env.GOOGLE_API_KEY === 'undefined') {
+    return res.status(500).json({ status: 'error', message: 'GOOGLE_API_KEY is missing on the server. Please add it to Render environment variables.' });
+  }
+
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
@@ -73,14 +77,16 @@ router.post('/upload-ocr', upload.single('file'), async (req, res) => {
 
     const response = await result.response;
     const text = response.text();
-    // Extract JSON from potential markdown blocks
-    const jsonMatch = text.match(/\{.*\}/s);
-    const data = JSON.parse(jsonMatch[0]);
+    console.log('AI Response:', text);
 
+    const jsonMatch = text.match(/\{.*\}/s);
+    if (!jsonMatch) throw new Error('No JSON found in AI response');
+    
+    const data = JSON.parse(jsonMatch[0]);
     res.json({ status: 'success', data });
   } catch (error) {
-    console.error('OCR Error:', error);
-    res.status(500).json({ status: 'error', message: 'Failed to parse document. Ensure it is a clear image or PDF.' });
+    console.error('OCR Error Details:', error);
+    res.status(500).json({ status: 'error', message: `AI Processing failed: ${error.message}` });
   }
 });
 
