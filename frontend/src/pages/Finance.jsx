@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingDown, PieChart as PieChartIcon, ArrowUpRight, ArrowDownRight, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://mis-system-agility.onrender.com/api';
 
 const expenseData = [
   { month: 'Jan', revenue: 120000, expenses: 85000 },
