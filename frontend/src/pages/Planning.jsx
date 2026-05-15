@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ClipboardList, Calculator, Users, Clock, Calendar, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ClipboardList, Calculator, Users, Clock, Calendar, CheckCircle2, AlertCircle, Loader2, ArrowRight, Upload, FileText, X as CloseIcon } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://mis-system-agility.onrender.com/api';
 
@@ -16,8 +16,10 @@ export default function Planning() {
   });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchHistory();
@@ -30,6 +32,37 @@ export default function Planning() {
       if (data.status === 'success') setHistory(data.data);
     } catch (err) {
       console.error('Error fetching history:', err);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setOcrLoading(true);
+    setError(null);
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+
+    try {
+      const response = await fetch(`${API_URL}/planning/upload-ocr`, {
+        method: 'POST',
+        body: formDataUpload
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        setFormData({
+          ...formData,
+          product_name: data.data.product_name,
+          order_qty_kg: data.data.order_qty_kg
+        });
+      } else {
+        setError(data.message);
+      }
+    } catch (err) {
+      setError('OCR failed. Ensure your backend has GOOGLE_API_KEY set.');
+    } finally {
+      setOcrLoading(false);
     }
   };
 
@@ -68,7 +101,35 @@ export default function Planning() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form Section */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
+          {/* OCR Upload Zone */}
+          <div 
+            onClick={() => fileInputRef.current.click()}
+            className="glass-card border-dashed border-2 border-agility-green/30 bg-agility-green/5 hover:bg-agility-green/10 transition-all cursor-pointer group text-center p-8"
+          >
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              className="hidden" 
+              accept="image/*,application/pdf"
+              onChange={handleFileUpload}
+            />
+            {ocrLoading ? (
+              <div className="flex flex-col items-center">
+                <Loader2 className="w-10 h-10 text-agility-green animate-spin mb-2" />
+                <p className="text-sm font-semibold text-agility-green">AI scanning your document...</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="p-3 bg-white rounded-xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                  <Upload className="w-6 h-6 text-agility-green" />
+                </div>
+                <p className="text-sm font-bold text-gray-900">Upload PO Receipt</p>
+                <p className="text-xs text-gray-500 mt-1">Drop image or PDF to auto-fill form</p>
+              </div>
+            )}
+          </div>
+
           <div className="glass-card">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-agility-green" />

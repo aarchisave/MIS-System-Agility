@@ -4,12 +4,17 @@ const { Pool } = pkg;
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -32,6 +37,52 @@ const CAPACITIES = {
   'Murmura Mixture': { machine: 'Seasoning Drum', cap: 150, crew: 4 },
   'Bombay Mixture': { machine: 'Seasoning Drum', cap: 150, crew: 4 }
 };
+
+/**
+ * POST /api/planning/upload-ocr
+ * Uses AI to parse PO documents and return structured order data
+ */
+router.post('/upload-ocr', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const prompt = `
+      Analyze this Purchase Order document. 
+      Extract the Product Name and the Quantity in KG.
+      
+      RULES:
+      1. Product Name MUST exactly match one of these: ${Object.keys(CAPACITIES).join(', ')}.
+      2. If a product is similar (e.g., 'Spicy Boondi' -> 'Boondi'), use the closest match from our list.
+      3. Quantity MUST be a number in kilograms. If the PO says 'Grams', convert to KG.
+      
+      RETURN ONLY JSON format like this:
+      {"product_name": "Kodubale", "order_qty_kg": 500}
+    `;
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: req.file.buffer.toString("base64"),
+          mimeType: req.file.mimetype
+        }
+      }
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+    // Extract JSON from potential markdown blocks
+    const jsonMatch = text.match(/\{.*\}/s);
+    const data = JSON.parse(jsonMatch[0]);
+
+    res.json({ status: 'success', data });
+  } catch (error) {
+    console.error('OCR Error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to parse document. Ensure it is a clear image or PDF.' });
+  }
+});
 
 /**
  * POST /api/planning/predict
