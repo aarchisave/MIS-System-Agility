@@ -14,6 +14,7 @@ import Forecasting from './pages/Forecasting';
 import Alerts from './pages/Alerts';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import Planning from './pages/Planning';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="alerts" element={<Alerts />} />
           <Route path="users" element={<Users />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="planning" element={<Planning />} />
         </Route>
       </Routes>
     </Router>

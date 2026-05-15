@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import pkg from 'pg';
 const { Pool } = pkg;
+import planningRoutes from './routes/planning.js';
 
 dotenv.config();
 
@@ -26,19 +27,6 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
- * GET /api/clients
- * Returns a list of unique clients
- */
-app.get('/api/clients', async (req, res) => {
-  try {
-    const { rows } = await pool.query('SELECT DISTINCT client_name FROM production_batches WHERE client_name IS NOT NULL');
-    res.json({ status: 'success', data: rows.map(r => r.client_name) });
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
-  }
-});
-
-/**
  * GET /api/inventory
  * Returns all raw materials and stock levels
  */
@@ -46,6 +34,19 @@ app.get('/api/inventory', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM raw_materials ORDER BY name ASC');
     res.json({ status: 'success', data: rows });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+/**
+ * GET /api/clients
+ * Returns a list of unique clients
+ */
+app.get('/api/clients', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT DISTINCT client_name FROM production_batches WHERE client_name IS NOT NULL');
+    res.json({ status: 'success', data: rows.map(r => r.client_name) });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -136,6 +137,8 @@ app.post('/api/batches/new', async (req, res) => {
     res.status(500).json({ status: 'error', message: error.message });
   }
 });
+
+app.use('/api/planning', planningRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

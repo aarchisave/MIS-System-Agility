@@ -15,13 +15,15 @@ import {
   Settings,
   Search,
   Menu,
-  X
+  X,
+  Calculator
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Production', href: '/production', icon: Factory },
   { name: 'Inventory', href: '/inventory', icon: Package },
+  { name: 'Planning', href: '/planning', icon: Calculator },
   { name: 'Premix Mgmt', href: '/premix', icon: FlaskConical },
   { name: 'Packaging', href: '/packaging', icon: Box },
   { name: 'Dispatch', href: '/dispatch', icon: Truck },

@@ -26,12 +26,11 @@ async function runMigrations() {
     await client.connect();
     console.log('Connected to Supabase PostgreSQL');
 
-    const migrationFiles = [
-      '../migrations/03_import_excel_data.sql'
-    ];
+    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
 
-    for (const file of migrationFiles) {
-      const filePath = path.resolve(__dirname, file);
+    for (const file of files) {
+      const filePath = path.join(migrationsDir, file);
       console.log(`Executing: ${file}`);
       const sql = fs.readFileSync(filePath, 'utf8');
       await client.query(sql);
